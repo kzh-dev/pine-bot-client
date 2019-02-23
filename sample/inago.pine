@@ -1,0 +1,8 @@
+
+if close > open
+    strategy.entry('B', strategy.long)
+else
+    if close < open
+        strategy.entry('S', strategy.short)
+    else
+        strategy.close_all()
