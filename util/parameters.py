@@ -19,7 +19,7 @@ def load_param_file (fname):
     with open(fname) as f:
         return json.loads(f.read(), object_pairs_hook=collections.OrderedDict)
 
-def load_parameters (user_params, pine_fname=None):
+def load_parameters (user_params=None, pine_fname=None):
     params = deepcopy(default)
 
     # global parameters

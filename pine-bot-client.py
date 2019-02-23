@@ -20,13 +20,30 @@ VERSION = '0.0'
 ## do_help
 def do_help ():
     s = '''\
-[Usage] python pine-bot-client.py <command> [<pine script>] [<parameter files>]
+[Usage] python pine-bot-client.py <command> [<argument>, ...]
 
- <command> := help|init|run
+ <command> := help|support|init|run
 
- [init] Generate configuration file for the specifed pine script.
- [run]  Run the script. By default, it automatically reads a paramter file with same basename.
-        You can specify different paramter file as optional command line argument.
+<support>
+ support
+   Display supported exchanges
+ 
+ support <exchange>
+   Display supported markets
+
+ support <exchange> <market>
+   Check given exchange/markt pair is supported
+
+<init>
+ init <pine script>
+   Generate parameter json file unde the same directory of given pine script
+
+<run>
+ run <pine script>
+   Run Pine script
+
+ run <pine script> <additiona parameter json file>
+   Run Pine script with additional parameters.
 '''
     print(s)
     sys.exit(0)
@@ -39,18 +56,25 @@ class CommandLineError (Exception):
 def handle_command_line ():
     argc = len(sys.argv)
     if argc < 2:
-        raise CommandLineError("Need <command>")
+        raise CommandLineError("missing <command>. ('help' to show usge)")
 
     # command
     command = sys.argv[1]
-    if command not in ('run', 'init', 'help'):
+    if command not in ('run', 'init', 'help', 'support'):
         raise CommandLineError("invalid command: {}".format(command))
     if command == 'help':
         return (command, None, None, None)
+    if command == 'support':
+        exchange = market = None
+        if argc > 2:
+            exchange = sys.argv[2]
+        if argc > 3:
+            market = sys.argv[3]
+        return (command, exchange, market, None)
 
     # pine script
     if argc < 3:
-        raise CommandLineError("Need <command> and <pine script>")
+        raise CommandLineError("missing <pine script>")
     pine_fname = sys.argv[2]
     pine_str = ''
     try:
@@ -73,10 +97,11 @@ def handle_command_line ():
 ## Run as a script
 if __name__ == '__main__':
     from util.logging import notify, enable_logfile, enable_discord
+    from command.support import do_support
     from command.init import do_init
     from command.run import do_run
     try:
-        command, pine_fname, pine_str, params = handle_command_line()
+        command, *args = handle_command_line()
     except CommandLineError as e:
         logger.error(e)
         logger.info('Type `python {} help` for usage'.format(sys.argv[0]))
@@ -86,15 +111,20 @@ if __name__ == '__main__':
         do_help()
 
     try:
-        if command == 'init':
-            params = load_parameters(params)
-            do_init(params, pine_fname, pine_str)
-        elif command == 'run':
-            params = load_parameters(params, pine_fname)
-            logger.enable_logfile(pine_fname, params)
-            logger.enable_discord(params)
-            notify("=== %s ver.%s start ===", BOT_NAME, VERSION)
-            do_run(params, pine_fname, pine_str)
+        if command == 'support':
+            params = load_parameters()
+            do_support(params, args[0], args[1])
+        else:
+            pine_fname, pine_str, params = args
+            if command == 'init':
+                params = load_parameters(params)
+                do_init(params, pine_fname, pine_str)
+            elif command == 'run':
+                params = load_parameters(params, pine_fname)
+                logger.enable_logfile(pine_fname, params)
+                logger.enable_discord(params)
+                notify("=== %s ver.%s start ===", BOT_NAME, VERSION)
+                do_run(params, pine_fname, pine_str)
     except Exception as e:
         logger.critical("fail to execute '%s: %s", command, e, exc_info=e)
         sys.exit(1)
