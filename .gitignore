@@ -104,3 +104,4 @@ venv.bak/
 .mypy_cache/
 log/
 global-parameters.json
+*.pine.json

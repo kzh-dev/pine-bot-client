@@ -1,8 +1,10 @@
 # coding=utf-8
 
 import time
-from datetime import datetime, timezone
-from util.logger import info, debug, report2, report3, error, warning
+from logging import getLogger
+logger = getLogger(__name__)
+
+from util.time import utcnowtimestamp
 from util.comm import call_api2
 
 class BotVM (object):
@@ -15,7 +17,7 @@ class BotVM (object):
         self.update_jitter(kws['server_clock'])
 
     def update_jitter (self, server_clock):
-        local_clock = datetime.now(timezone.utc).timestamp()
+        local_clock = utcnowtimestamp()
         self.jitter = local_clock - server_clock
         self.local_next_clock = self.next_clock + self.jitter
         
@@ -27,7 +29,7 @@ class BotVM (object):
                 # update current position, orders
                 continue
 
-            report2('ready!')
+            logger.debug('ready!')
 
             # Try to step VM by 1tick
             try:
@@ -39,7 +41,7 @@ class BotVM (object):
 
                 #
                 for a in actions:
-                    warning(a)
+                    loger.warning(a)
                 #  step(status, next_clock)
                 #  if wait
                 #     continue
@@ -50,7 +52,7 @@ class BotVM (object):
                 #  if actions:
                 #     applyr(actions)
             except Exception as e:
-                error("fail to trystep: {}".format(e))
+                logger.error("fail to trystep: {}".format(e))
                 time.sleep(3)
             
     def sleep (self):

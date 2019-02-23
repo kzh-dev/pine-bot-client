@@ -4,16 +4,18 @@ import os
 import json
 import collections
 
+from logging import getLogger
+logger = getLogger(__name__)
+
 from copy import deepcopy
 
 from util.dict_merge import dict_merge
-from util.logger import info
 
 default = collections.OrderedDict(
     API_SERVER_URL = 'http://pine-api.kzh-crypto.net',
 )
 
-def _load_one_file (fname):
+def load_param_file (fname):
     with open(fname) as f:
         return json.loads(f.read(), object_pairs_hook=collections.OrderedDict)
 
@@ -22,13 +24,13 @@ def load_parameters (user_params, pine_fname=None):
 
     # global parameters
     try:
-        dict_merge(params, _load_one_file('global-parameters.json'))
+        dict_merge(params, load_param_file('global-parameters.json'))
     except FileNotFoundError:
         pass
 
     # Pine parameters
     if pine_fname:
-        dict_merge(params, _load_one_file(pine_fname+'.param'))
+        dict_merge(params, load_param_file(pine_fname+'.param'))
 
     # User defined parameters
     if user_params:
@@ -37,10 +39,10 @@ def load_parameters (user_params, pine_fname=None):
     return params
 
 def save_parameters (params, pine_fname):
-    param_fname = pine_fname + '.param'
+    param_fname = pine_fname + '.json'
     with open(param_fname, 'w') as f:
         f.write(json.dumps(params, indent=4)+"\n")
-    info("Generate a new paramter file: %s", param_fname)
+    logger.info(f"Generate a new paramter file: {param_fname}")
 
 def _sanitize_dict (dct):
     for k, v in dct.items():

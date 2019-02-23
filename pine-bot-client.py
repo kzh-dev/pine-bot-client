@@ -1,16 +1,18 @@
 # coding=utf-8
 
 import sys
-import os
 
 ## Python version check
 version = sys.version_info
-if version[0] != 3:
-    print("Use Python3!")
+if version[0] != 3 or version[1] < 6:
+    vstr = sys.version.split()[0]
+    print(f"*** Use Python 3.6 or above: now={vstr} ***")
     sys.exit(1)
 
-import requests
-import json
+from logging import getLogger
+logger = getLogger(__name__)
+
+from util.parameters import load_parameters, load_param_file
 
 BOT_NAME = 'pine-bot'
 VERSION = '0.0'
@@ -33,6 +35,7 @@ def do_help ():
 ## Handling command line arguments
 class CommandLineError (Exception):
     pass
+
 def handle_command_line ():
     argc = len(sys.argv)
     if argc < 2:
@@ -60,43 +63,38 @@ def handle_command_line ():
     params = None
     if argc > 3:
         try:
-            with open(sys.argv[3]) as f:
-                params = json.loads(f.read())
+            load_param_file(sys.argv[3])
         except Exception as e:
-            raise CommandLineError("fail to load configuration file: {}".format(e)) from e
+            raise CommandLineError(f"fail to load parameter file: {e}") from e
 
     return (command, pine_fname, pine_str, params)
 
 
 ## Run as a script
 if __name__ == '__main__':
-    from util.logger import initialize_logger, critical, report2
-    from util.parameters import load_parameters
+    from util.logging import notify, enable_logfile, enable_discord
     from command.init import do_init
     from command.run import do_run
     try:
         command, pine_fname, pine_str, params = handle_command_line()
     except CommandLineError as e:
-        print(e)
-        print('Type `python {} help` for usage'.format(sys.argv[0]))
+        logger.error(e)
+        logger.info('Type `python {} help` for usage'.format(sys.argv[0]))
         sys.exit(1)
 
     if command == 'help':
         do_help()
 
     try:
-        logger = initialize_logger(BOT_NAME)
         if command == 'init':
             params = load_parameters(params)
             do_init(params, pine_fname, pine_str)
-        else:
-            logger.enable_file(pine_fname)
+        elif command == 'run':
             params = load_parameters(params, pine_fname)
-            discord_url = params.get('DISCORD_URL', None)
-            if discord_url:
-                logger.enable_discord(discord_url)
-            report2("=== %s ver.%s start ===", BOT_NAME, VERSION)
+            logger.enable_logfile(pine_fname, params)
+            logger.enable_discord(params)
+            notify("=== %s ver.%s start ===", BOT_NAME, VERSION)
             do_run(params, pine_fname, pine_str)
     except Exception as e:
-        critical("fail to execute '%s: %s", command, e, exc_info=e)
+        logger.critical("fail to execute '%s: %s", command, e, exc_info=e)
         sys.exit(1)

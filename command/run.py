@@ -1,36 +1,36 @@
 # coding=utf-8
 
-from util.logger import logger, report2, report3, info
+from logging import getLogger
+logger = getLogger(__name__)
 
+from util.parameters import sanitize_parameters
 from util.comm import call_api
+from util.time import utcnowtimestamp
 from vm.vm import BotVM
-from datetime import datetime, timezone
 
 def do_run (params, pine_fname, pine_str):
     ## Prelude (dump info)
-    api_key = params.pop('API_KEY')
-    secret  = params.pop('SECRET')
-    report2("  Pine script: %s", pine_fname)
-    for k, v in params.items():
-        report2("  %s: %s", k, v)
-    report3("  API_KEY: %s", api_key)
-    report3("  SECRET : %s", secret)
-
+    logger.info(f"Pine script: {pine_fname}")
+    logger.info(f"[Parameters]")
+    for line in json.dumps(sanitize_parameters(params), indent=2).splitlines():
+        logger.info(line)
+    
     # TODO make exchange
 
     ## Register pine script
     res = call_api(params, '/init-vm', params=params, code=pine_str)
-    if 'error' in res:
-        raise Exception('Fail to initialize pine script: {}'.format(res['error']))
+    error = res.get('error', None)
+    if error:
+        raise Exception(f'Fail to process Pine script: {error}')
 
-    utcnow = datetime.now(timezone.utc).timestamp()
+    utcnow = utcnowtimestamp()
     jitter = utcnow - res['server_clock']
     to_next = res['next_clock'] - int(utcnow)
-    report2("VM has been initialized: id=%s to_next=%s jitter=%.2f", res['vm'], to_next, jitter)
+    logger.info("VM has been initialized: id=%s to_next=%s jitter=%.2f", res['vm'], to_next, jitter)
 
     # make VM
-    vm = BotVM(params, **res)
+    bot = BotVM(params, **res)
     # TODO make broker
 
-    report2("Bot start!!")
-    vm.run_forever()
+    # start
+    bot.run_forever()
