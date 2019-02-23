@@ -70,7 +70,7 @@ def handle_command_line ():
 
 ## Run as a script
 if __name__ == '__main__':
-    from util.logger import initialize_logger, critical
+    from util.logger import initialize_logger, critical, report2
     from util.parameters import load_parameters
     from command.init import do_init
     from command.run import do_run
@@ -90,14 +90,13 @@ if __name__ == '__main__':
             params = load_parameters(params)
             do_init(params, pine_fname, pine_str)
         else:
-            params = load_parameters(params, pine_fname)
-
             logger.enable_file(pine_fname)
+            params = load_parameters(params, pine_fname)
             discord_url = params.get('DISCORD_URL', None)
             if discord_url:
                 logger.enable_discord(discord_url)
-
+            report2("=== %s ver.%s start ===", BOT_NAME, VERSION)
             do_run(params, pine_fname, pine_str)
     except Exception as e:
-        critical("fail to execute '{}: {}".format(command, e), exc_info=e)
+        critical("fail to execute '%s: %s", command, e, exc_info=e)
         sys.exit(1)
