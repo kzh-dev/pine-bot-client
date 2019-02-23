@@ -1,6 +1,7 @@
 # coding=utf-8
 
 import requests
+import exchange.cryptowatchhelper as helper
 
 API_SERVER_URL = 'https://api.cryptowat.ch'
 #URL_TMPL = "https://api.cryptowat.ch/markets/bitflyer/btcfxjpy/ohlc?" + \
@@ -9,7 +10,8 @@ API_SERVER_URL = 'https://api.cryptowat.ch'
 class CryptoWatchError (Exception):
     pass
 
-class OHLCVProvider (object):
+from exchange.ohlcprovider import BaseOHLCVProvider
+class OHLCVProvider (BaseOHLCVProvider):
 
     def __init__ (self, exchange, pair):
         self.exchange = exchange
@@ -25,11 +27,6 @@ class OHLCVProvider (object):
 def supports (exchange, pair):
     return exchange in markets and pair in markets[exchange]
 
-##
-def _initialize_bitmex (symbols, pair):
-    if pair.endswith('-perpetual-futures'):
-        symbols[pair.split('-')[0]] = pair
-    symbols['xbtusd'] = 'btcusd-perpetual-futures'
 
 from collections import OrderedDict
 markets = OrderedDict()
@@ -41,9 +38,10 @@ def initialize ():
             pair = m['pair']
             symbols = markets.setdefault(exchange, OrderedDict())
             symbols[pair] = pair
-            if exchange == 'bitmex':
-                _initialize_bitmex(symbols, pair)
-    except Exchange as e:
+            func = getattr(helper, f'init_{exchange}', None)
+            if func:
+                func(symbols, pair)
+    except Exception as e:
         raise CryptoWatchError(f'fail to fetch markets: {e}') from e
 
 if __name__ == '__main__':

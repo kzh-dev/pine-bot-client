@@ -14,6 +14,32 @@ import exchange.cryptowatch as cryptowatch
 from util.dict_merge import dict_merge
 from util.parameters import sanitize_parameters
 
+def any_to_resolution (obj):
+    try:
+        return int(obj)
+    except:
+        pass
+    s = str(obj).lower()
+
+    try:
+        num = int(s[:-1])
+    except:
+        raise NotSupported(f'unknown resolution: {obj}')
+
+    sfx = s[-1]
+    if sfx == 'm':
+        pass
+    elif sfx == 'h':
+        num *= 60
+    elif sfx == 'd':
+        num *= 60 * 24
+    elif sfx == 'w':
+        num *= 60 * 24 * 7
+    else:
+        raise NotSupported(f'unknown timeframe string: {obj}')
+    return num
+
+
 class Exchange (object):
 
     def __init__ (self, name, ccxt_obj, options):
@@ -31,53 +57,69 @@ class Exchange (object):
             raise NotSupported('testnet is not supported')
         self.ccxt.urls['api'] = self.ccxt.urls['test']
 
+    def _expand_ids (self, *args):
+        rslt = set()
+        for arg in args:
+            for a in (arg, ''.join([c for c in arg if c.isalnum()])):
+                rslt.add(a)
+                rslt.add(a.upper())
+                rslt.add(a.lower())
+        return list(rslt)
+
     def _initialize_markets (self):
         self.markets = {}
         self.market_alias = {}
         for name, m in self.ccxt.load_markets().items():
             alias = self.market_alias.setdefault(m['id'], [])
-            for n in (name, m['id'], m['symbol']):
+            ids = self._expand_ids(name, m['id'], m['symbol'])
+            for n in ids:
                 self.markets[n] = m
-                self.markets[n.upper()] = m
-                self.markets[n.lower()] = m
-                alias += (n, n.upper(), n.lower())
+            alias += ids
 
 
-class CCXTOHLCVProvider (object):
+from exchange.ohlcprovider import BaseOHLCVProvider
+class CCXTOHLCVProvider (BaseOHLCVProvider):
 
     def __init__ (self, ccxt_obj, symbol):
+        super().__init__()
         self.ccxt_obj = ccxt_obj
         self.symbol = symbol
 
     def resolutions (self):
-        return [self._to_min(t) for t in self.ccxt_obj.timeframes.keys()]
+        return [any_to_resolution(t) for t in self.ccxt_obj.timeframes.keys()]
 
-    def _to_min (self, tf_str):
-        num = int(tf_str[:-1])
-        sfx = tf_str[-1]
-        if sfx == 'm':
-            pass
-        elif sfx == 'h':
-            num *= 60
-        elif sfx == 'd':
-            num *= 60 * 24
-        elif sfx == 'w':
-            num *= 60 * 24 * 7
+    def _resolution_to_tf (self, resolution):
+        if resolution > 60 * 24 * 7:
+            n = int(resolution / (60 * 24 * 7))
+            u = 'w'
+        elif resolution > 60 * 24:
+            n = int(resolution / (60 * 24))
+            u = 'd'
+        elif resolution > 60:
+            n = int(resolution / 60)
+            u = 'h'
         else:
-            raise NotSupported(f'unknown timeframe string: {tf_str}')
-        return num
+            n = resolution
+            u = ''
+        return f'{n}{u}'
+
+    def set_resolution (self, resolution):
+        super().set_resolution(resolution)
+        self._resolution = self._resolution_to_tf(self.resolution)
 
 
 class Market (object):
 
-    def __init__ (self, exchange, symbol, options):
+    def __init__ (self, exchange, symbol, resolution, options):
         self.exchange = exchange
         self.symbol_ = symbol
         self.market = exchange.markets[symbol.lower()]
         self.symbol = self.market['symbol']
+        self.resolution = any_to_resolution(resolution)
         self.options = options
         # ohlcv provider
         self._initialize_ohlcv_provider()
+        self.ohlcv_provider.set_resolution(self.resolution)
 
     def _initialize_ohlcv_provider (self):
         provider = None
@@ -122,11 +164,11 @@ def get_exchange (name, params):
     
     return Exchange(name, ccxt_obj, options_)
 
-def get_market (exchange, symbol, params):
+def get_market (exchange, symbol, resolution, params):
     exchange = get_exchange(exchange, params)
     if symbol not in exchange.markets:
         raise ExchangeError(f'market not found: {symbol}')
-    return Market(exchange, symbol, params)
+    return Market(exchange, symbol, resolution, params)
 
 
 if __name__ == '__main__':

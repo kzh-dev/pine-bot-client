@@ -96,7 +96,7 @@ def handle_command_line ():
 
 ## Run as a script
 if __name__ == '__main__':
-    from util.logging import notify, enable_logfile, enable_discord
+    from util.logging import enable_logfile
     from command.support import do_support
     from command.init import do_init
     from command.run import do_run
@@ -121,9 +121,8 @@ if __name__ == '__main__':
                 do_init(params, pine_fname, pine_str)
             elif command == 'run':
                 params = load_parameters(params, pine_fname)
-                logger.enable_logfile(pine_fname, params)
-                logger.enable_discord(params)
-                notify("=== %s ver.%s start ===", BOT_NAME, VERSION)
+                enable_logfile(pine_fname, params)
+                logger.info(logger, f"=== {BOT_NAME} ver.{VERSION} start ===")
                 do_run(params, pine_fname, pine_str)
     except Exception as e:
         logger.critical("fail to execute '%s: %s", command, e, exc_info=e)

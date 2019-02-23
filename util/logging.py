@@ -67,7 +67,7 @@ app_logger.setLevel(logging.DEBUG)
 
 # utilities
 import os.path
-def enable_logfile (self, pine_fname, params={}):
+def enable_logfile (pine_fname, params={}):
     dir_name = 'log'
     try:
         os.mkdir(dir_name)
@@ -76,12 +76,12 @@ def enable_logfile (self, pine_fname, params={}):
     except Exception as e:
         logger.error(f'fail to make log directory: {e}') 
         raise e
-    path = os.path.join(dir_name, os.path.basename(pine_fname)) + '.log'
+    path = os.path.join(dir_name, os.path.basename(pine_fname+'.log'))
     app_logger.addHandler(make_file_handler(path))
 
 from util.dict_merge import dict_merge
 import threading
-def enable_discord (self, params={}):
+def enable_discord (params={}):
     global discord_thread
     conf = params.get('discord', None)
     if conf:

@@ -30,7 +30,7 @@ def load_parameters (user_params=None, pine_fname=None):
 
     # Pine parameters
     if pine_fname:
-        dict_merge(params, load_param_file(pine_fname+'.param'))
+        dict_merge(params, load_param_file(pine_fname+'.json'))
 
     # User defined parameters
     if user_params:
