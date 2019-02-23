@@ -1,14 +1,37 @@
 # coding=utf-8
 
 import sys
+import os
 
 ## Python version check
+PYTHON_VERSION = sys.version.split()[0]
 version = sys.version_info
 if version[0] != 3 or version[1] < 6:
-    vstr = sys.version.split()[0]
-    print(f"*** Use Python 3.6 or above: now={vstr} ***")
+    print(f"*** Use Python 3.6 or above: now={PYTHON_VERSION} ***")
     sys.exit(1)
 
+## CCXT version check
+try:
+    import ccxt
+except ImportError:
+    print(f"*** CCXT is not found!! ***")
+    sys.exit(1)
+CCXT_VERSION = 'builtin'
+if not os.path.exists('ccxt'):
+    CCXT_VERSION = 'unknown'
+    try:
+        import pip
+        ccxt = list(filter(lambda pkg: pkg.key == 'ccxt', pip.get_installed_distributions()))
+        if ccxt:
+            ccxt = ccxt[0]
+            CCXT_VERSION = ccxt.version
+            ver = [int(n) for n in ccxt.version.split('.')]
+            if ver < [1, 17, 376]:
+                print(f"Recommend CCXT 1.17.376 or above: now={CCXT_VERSION}")
+    except:
+        pass
+
+## setup
 from logging import getLogger
 logger = getLogger(__name__)
 
