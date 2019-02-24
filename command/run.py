@@ -14,15 +14,7 @@ import exchange.cryptowatch as cryptowatch
 
 from util.logging import notify, enable_discord
 
-def do_run (params, pine_fname, pine_str):
-
-    ## Prelude (dump info)
-    logger.info(f"Pine script: {pine_fname}")
-    logger.info(f"[Parameters]")
-    for line in json.dumps(sanitize_parameters(params), indent=2).splitlines():
-        logger.info(line)
-    
-    # make market/exchange
+def _prepare_market (params):
     exchange = params.get('exchange', None)
     symbol = params.get('symbol', None)
     resolution = params.get('resolution', None)
@@ -33,10 +25,13 @@ def do_run (params, pine_fname, pine_str):
     if resolution is None:
         raise Exception("missing 'resolution'")
     cryptowatch.initialize()
-    market = get_market(exchange, symbol, resolution, params)
+    return get_market(exchange, symbol, resolution, params)
 
-    ## Install pine script
-    res = call_api(params, '/install-vm', inputs=params['inputs'], code=pine_str)
+
+def _install_vm (params, pine_str, market):
+    res = call_api(params, '/install-vm',
+                code=pine_str, inputs=params['inputs'], market=market.info) 
+                
     error = res.get('error', None)
     if error:
         raise Exception(f'Fail to process Pine script: {error}')
@@ -44,15 +39,33 @@ def do_run (params, pine_fname, pine_str):
     if markets:
         raise Exception('security() is not supported')
 
+    vmid = res['vm']
     server_clock = res.get('server_clock')
-    jitter = utcnowtimestamp() - server_clock
-    logger.info("VM has been initialized: id=%s jitter=%.2f", res['vm'], jitter)
 
-    # make VM
-    bot = BotVM(params, **res)
-    # TODO make broker
+    bot = BotVM(params, ident=vmid, market=market)
+    jitter = bot.update_jitter(server_clock)
+    logger.info("VM has been installed: id=%s jitter=%.2f", vmid, jitter)
 
-    # start
+    return bot
+
+def do_run (params, pine_fname, pine_str):
+
+    ## Prelude (dump info)
+    logger.info(f"Pine script: {pine_fname}")
+    logger.info(f"[Parameters]")
+    for line in json.dumps(sanitize_parameters(params), indent=2).splitlines():
+        logger.info(line)
+    
+    # make market/exchange
+    market = _prepare_market(params)
+
+    ## Install pine script
+    bot = _install_vm(params, pine_str, market)
+
+    ## Load initialize OHLCV data
+    bot.boot()
+
+    ## start
     enable_discord(params)
-    notify("PINE Bot starts!!")
+    notify(logger, f"PINE Bot has started!! {market.info}")
     bot.run_forever()

@@ -105,3 +105,4 @@ venv.bak/
 log/
 global-parameters.json
 *.pine.json
+logging.conf

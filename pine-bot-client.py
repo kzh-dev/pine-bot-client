@@ -33,7 +33,7 @@ if not os.path.exists('ccxt'):
 
 ## setup
 from logging import getLogger
-logger = getLogger(__name__)
+logger = getLogger()
 
 from util.parameters import load_parameters, load_param_file
 
@@ -145,7 +145,7 @@ if __name__ == '__main__':
             elif command == 'run':
                 params = load_parameters(params, pine_fname)
                 enable_logfile(pine_fname, params)
-                logger.info(logger, f"=== {BOT_NAME} ver.{VERSION} start ===")
+                logger.info(f"=== {BOT_NAME} ver.{VERSION} start ===")
                 do_run(params, pine_fname, pine_str)
     except Exception as e:
         logger.critical("fail to execute '%s: %s", command, e, exc_info=e)

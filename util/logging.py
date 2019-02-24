@@ -60,10 +60,15 @@ def discord_sender ():
             logger.error(f'fail to send to Discord: {e}')
 
 ## App logger
-app_name = __name__.split('.')[0]
-app_logger = logging.getLogger(app_name)
+app_logger = logging.getLogger()
 app_logger.addHandler(console_handler)
 app_logger.setLevel(logging.DEBUG)
+
+# load logging conf
+import os
+if os.path.exists('./logging.conf'):
+    from logging import config
+    config.fileConfig('./logging.conf', disable_existing_loggers=False)
 
 # utilities
 import os.path

@@ -121,6 +121,10 @@ class Market (object):
         self._initialize_ohlcv_provider()
         self.ohlcv_provider.set_resolution(self.resolution)
 
+    @property
+    def info (self):
+        return (self.exchange.name, self.symbol, self.resolution)
+
     def _initialize_ohlcv_provider (self):
         provider = None
         # cryptowatch?
@@ -143,6 +147,13 @@ class Market (object):
                 
         self.ohlcv_provider = provider
 
+    def load_ohlcv (self, timestamp):
+        return self.ohlcv_provider.load(self.resolution, timestamp)
+
+    def fetch_ohlcv (self, timestamp):
+        return self.ohlcv_provider.fetch(self.resolution, timestamp)
+        
+
 ## Factory
 def get_exchange (name, params):
     name_ = name.lower()
@@ -159,8 +170,8 @@ def get_exchange (name, params):
     ccxt_cls = getattr(ccxt, name_)
     ccxt_obj = ccxt_cls(options)
     
+    log.info(f'Initialize exchange: {name}')
     options_ = sanitize_parameters(deepcopy(options))
-    log.info(f'Initialize exchange: {name}: {options_}')
     
     return Exchange(name, ccxt_obj, options_)
 
@@ -168,7 +179,9 @@ def get_market (exchange, symbol, resolution, params):
     exchange = get_exchange(exchange, params)
     if symbol not in exchange.markets:
         raise ExchangeError(f'market not found: {symbol}')
-    return Market(exchange, symbol, resolution, params)
+    market = Market(exchange, symbol, resolution, params)
+    log.info(f'Initialize market: {symbol}, {resolution}')
+    return market
 
 
 if __name__ == '__main__':
