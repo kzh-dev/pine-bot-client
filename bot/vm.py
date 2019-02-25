@@ -7,6 +7,8 @@ logger = getLogger(__name__)
 from util.time import utcnowtimestamp
 from util.comm import call_api, call_api2
 
+from bot.broker import Broker
+
 class VMIsPurged (Exception):
     pass
 
@@ -18,6 +20,8 @@ class BotVM (object):
         self.market = market
         self.jitter = 0.0
         self.ohlcv = None
+        self.broker = Broker(market)
+        self.position = 0.0
 
     @property
     def current_clock (self):
@@ -51,16 +55,14 @@ class BotVM (object):
                 logger.debug(f'wakeup! {self.current_clock}')
 
                 actions = self.trystep()
-                for a in actions:
-                    logger.info(a)
+                if actions:
+                    self.apply_actions(actions)
 
-                #  if actions:
-                #     applyr(actions)
             except VMIsPurged:
                 logger.warning(f'vm was purged: {self.ident}')
                 raise
             except Exception as e:
-                logger.error(f"fail to trystep: {e}"))
+                logger.error(f"fail to trystep: {e}")
                 time.sleep(3)
             
     def wait_till_next (self):
@@ -85,6 +87,16 @@ class BotVM (object):
             if self.current_clock >= next_clock:
                 break
 
+        # Get broker's status
+        self.position = self.broker.sync()
+
+    def apply_actions (self, actions):
+        logger.debug(f'apply actions {actions}')
+        self.broker.push_actions(actions)
+
+    def sync_broker (self):
+        return self.broker.sync()
+
     def update_ohlcv (self, ohlcv):
         ts0 = ohlcv['t'][0]
         if ts0 != self.current_clock:
@@ -97,8 +109,8 @@ class BotVM (object):
         # have new one
         for k in ohlcv.keys():
             self.ohlcv[k].pop(0)
-            self.ohlcv[k][-2] = ohlcv[k][0]
-            self.ohlcv[k][-1] = ohlcv[k][1]
+            self.ohlcv[k][-1] = ohlcv[k][0]
+            self.ohlcv[k].append(ohlcv[k][1])
 
     @property
     def latest_ohlcv2 (self):
@@ -116,10 +128,10 @@ class BotVM (object):
 
         broker = dict(position_size=0)
         status, obj = call_api2(self.params, '/step-vm', vmid=self.ident, broker=broker,
-                                ohlcv2=self.latest_ohlcv2)
+                                ohlcv2=self.latest_ohlcv2, position=self.position)
         if status == 205:   # reset
             raise VMIsPurged()
 
         # status 200
         self.update_jitter(obj['server_clock'])
-        return 'action', obj['actions']
+        return obj['actions']

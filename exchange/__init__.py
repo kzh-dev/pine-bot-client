@@ -1,12 +1,13 @@
 # coding=utf-8
 
 from logging import getLogger
-log = getLogger(__name__)
+logger = getLogger(__name__)
 
+import time
 from copy import deepcopy
 
 import ccxt
-from ccxt.base.errors import ExchangeError
+from ccxt.base.errors import ExchangeError, NetworkError
 from ccxt.base.errors import NotSupported
 
 import exchange.cryptowatch as cryptowatch
@@ -47,7 +48,7 @@ class Exchange (object):
         self.ccxt = ccxt_obj
         self.options = options
         # test net
-        if options.get('test', False):
+        if options.get('testnet', False):
             self._swith_to_testnet()
         # market info
         self._initialize_markets()
@@ -76,6 +77,19 @@ class Exchange (object):
                 self.markets[n] = m
             alias += ids
 
+    def fetch_orders (self, oid_list, symbol):
+        rslt = []
+        for oid in oid_list:
+            o = self.ccxt.fetchOrder(oid, symbol)
+            rslt.append(o)
+        return rslt
+
+    def create_order (self, symbol, qty):
+        if qty > 0:
+            return self.ccxt.createMarketBuyOrder(symbol, qty)
+        if qty < 0:
+            return self.ccxt.createMarketSellOrder(symbol, -qty)
+        raise Exchange('zero qty order')
 
 from exchange.ohlcprovider import BaseOHLCVProvider
 class CCXTOHLCVProvider (BaseOHLCVProvider):
@@ -153,6 +167,27 @@ class Market (object):
     def fetch_ohlcv (self, timestamp):
         return self.ohlcv_provider.fetch(self.resolution, timestamp)
         
+    def fetch_orders (self, oid_list):
+        while True:
+            try:
+                return self.exchange.fetch_orders(oid_list, self.symbol)
+            except (ExchangeError, NetworkError) as e:
+                logger.error(f'fail to fetch orders: {e}: {oid_list}')
+                time.sleep(5)
+
+    def create_order (self, qty, max_trial=3):
+        trial = 0
+        if max_trial <= 0:
+            max_trial = 2**16
+        while trial < max_trial:
+            try:
+                return self.exchange.create_order(self.symbol, qty)
+            except (ExchangeError, NetworkError) as e:
+                logger.error(f'fail to make market order: {e}: {self.symbol} {qty}')
+                time.sleep(5)
+                trial += 1
+        return None
+
 
 ## Factory
 def get_exchange (name, params):
@@ -170,7 +205,7 @@ def get_exchange (name, params):
     ccxt_cls = getattr(ccxt, name_)
     ccxt_obj = ccxt_cls(options)
     
-    log.info(f'Initialize exchange: {name}')
+    logger.info(f'Initialize exchange: {name}')
     options_ = sanitize_parameters(deepcopy(options))
     
     return Exchange(name, ccxt_obj, options_)
@@ -180,7 +215,7 @@ def get_market (exchange, symbol, resolution, params):
     if symbol not in exchange.markets:
         raise ExchangeError(f'market not found: {symbol}')
     market = Market(exchange, symbol, resolution, params)
-    log.info(f'Initialize market: {symbol}, {resolution}')
+    logger.info(f'Initialize market: {symbol}, {resolution}')
     return market
 
 

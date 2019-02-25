@@ -8,7 +8,7 @@ import json
 from util.parameters import sanitize_parameters
 from util.comm import call_api
 from util.time import utcnowtimestamp
-from vm.vm import BotVM
+from bot.vm import BotVM
 from exchange import get_market
 import exchange.cryptowatch as cryptowatch
 
