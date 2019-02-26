@@ -34,10 +34,12 @@ discord_queue = queue.Queue()
 discord_handler = logging.handlers.QueueHandler(discord_queue)
 discord_handler.setFormatter(shortest_formatter)
 discord_handler.setLevel(logging.CRITICAL)
+DEFAULT_DISCORD_NAME = 'PINE Bot'
+DEFAULT_DISCORD_AVATAR_URL = 'https://cdn.discordapp.com/icons/506478371786457099/356884415058fcc8891c20f68c5d2b47.png'
 discord_conf = dict(
     url='',
-    name=__name__.split('.')[0],
-    avatar='https://cdn.discordapp.com/icons/506478371786457099/356884415058fcc8891c20f68c5d2b47.png'
+    name=DEFAULT_DISCORD_NAME,
+    avatar_url=DEFAULT_DISCORD_AVATAR_URL,
 )
 import requests
 def discord_sender ():
@@ -49,8 +51,8 @@ def discord_sender ():
             continue
         data = {
             "content": msg,
-            "username": discord_conf['name'],
-            "avatar_url": discord_conf['avatar'],
+            "username": discord_conf['name'] or DEFAULT_DISCORD_NAME,
+            "avatar_url": discord_conf['avatar_url'] or DEFAULT_DISCORD_AVATAR_URL,
         }
         try:
             r = requests.post(discord_conf['url'], data=data)
