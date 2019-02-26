@@ -100,5 +100,5 @@ def enable_discord (params={}):
 def notify (logger, msg):
     logger.info(msg)
     if discord_thread:
-        discord_queue.push(msg)
+        discord_queue.put(msg)
     
