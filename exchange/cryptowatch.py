@@ -30,7 +30,7 @@ class OHLCVProvider (BaseOHLCVProvider):
             1440, 1440*3, 1440*7
         )
 
-    def rows_to_udf (self, rows):
+    def rows_to_udf (self, rows, resolution_sec):
         udf = {}
         t = udf.setdefault('t', [])
         o = udf.setdefault('o', [])
@@ -39,7 +39,7 @@ class OHLCVProvider (BaseOHLCVProvider):
         c = udf.setdefault('c', [])
         v = udf.setdefault('v', [])
         for row in rows:
-            t.append(int(row[0]))
+            t.append(int(row[0]) - resolution_sec)
             o.append(row[1])
             h.append(row[2])
             l.append(row[3])
@@ -66,7 +66,7 @@ class OHLCVProvider (BaseOHLCVProvider):
         rows = res.json().get('result', None).get(str(resolution_sec), None)
         if not rows:
             raise Exception(f'invalid replied contents: {res.text}')
-        return self.rows_to_udf(rows[-self.barcount:])
+        return self.rows_to_udf(rows[-self.barcount:], resolution_sec)
 
     def load (self, resolution, timestamp=None):
         import datetime
@@ -78,7 +78,7 @@ class OHLCVProvider (BaseOHLCVProvider):
         return ohlcv
 
     def fetch (self, resolution, timestamp):
-        pair = self._load(resolution, timestamp)
+        pair = self._load(resolution, timestamp + resolution * 60)
         logger.debug(f'pair={pair}')
         return pair
                             
