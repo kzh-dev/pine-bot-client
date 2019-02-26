@@ -137,7 +137,6 @@ class BotVM (object):
     def wait_till_next (self):
         next_clock = self.next_clock
         now = int(self.now())
-        print(f'{now}: {self.current_clock}: {self.next_clock}')
         while True:
             # Sleep
             self.sleep_with_hb(next_clock)
