@@ -19,9 +19,24 @@ class BotVM (object):
         self.ident = ident
         self.market = market
         self.jitter = 0.0
+        self.worst_jitter = 0.0
         self.ohlcv = None
         self.broker = Broker(market, params['strategy'])
         self.position = 0.0
+
+        self.hb_interval_base = 300
+        self.hb_interval_variance = 0.2
+        bot_params = params.get('bot', None)
+        if bot_params:
+            self.hb_interval_base = bot_params.get('hb_interval', self.hb_interval_base)
+            self.hb_interval_variance = bot_params.get('hb_interval_variance', self.hb_interval_variance)
+        self.initialize_hb_range()
+
+    def initialize_hb_range (self):
+        delta = int(self.hb_interval_base * 0.2)
+        minimum = self.hb_interval_base - delta
+        maximum = self.hb_interval_base + delta + 1
+        self.hb_interval_range = (minimum, maximum)
 
     @property
     def current_clock (self):
@@ -30,13 +45,32 @@ class BotVM (object):
     def next_clock (self):
         return self.ohlcv['t'][-1] + self.market.resolution * 60
 
+    CLOCK_JITTER_THRESHOLD = 3.0
     def update_jitter (self, server_clock):
         local_clock = utcnowtimestamp()
         self.jitter = local_clock - server_clock
+        # NOTICE
+        if self.worst_jitter == 0.0:
+            if self.jitter > self.CLOCK_JITTER_THRESHOLD:
+                logger.warning('clock jitter = %.3f', self.jitter)
+            else:
+                logger.info('clock jitter = %.3f', self.jitter)
+            self.worst_jitter = self.jitter
+        if self.jitter > self.CLOCK_JITTER_THRESHOLD and self.jitter > self.worst_jitter:
+            self.worst_jitter = self.jitter
+            logger.warning(f'worst clock jitter = {self.jitter}')
+            
         return self.jitter
 
     def now (self):
         return int(utcnowtimestamp() + self.jitter)
+
+    def call_api (self, path, **kws):
+        status, res = call_api2(self.params, path, **kws)
+        if status == 205:
+            raise VMIsPurged()
+        self.update_jitter(res['server_clock'])
+        return res
 
     def boot (self):
         self.ohlcv = self.market.load_ohlcv(self.now())
@@ -64,27 +98,52 @@ class BotVM (object):
             except Exception as e:
                 logger.error(f"fail to trystep: {e}")
                 time.sleep(3)
+
+    def sleep_randomly (self, now):
+        import random
+        interval = self.next_clock - self.current_clock
+        actual_sleep = to_sleep = interval - now % interval
+        if actual_sleep > self.hb_interval_base:
+            actual_sleep = random.randrange(*self.hb_interval_range) # ~5min
+        logger.debug(f'sleep={actual_sleep}/{to_sleep} now={now} interval={interval}')
+        time.sleep(actual_sleep)
+        return to_sleep == actual_sleep
+
+    def sleep_with_hb (self, next_clock):
+        while True:
+            now = self.now()
+            if now >= next_clock - 1:
+                break
+            if not self.sleep_randomly(now):
+                # HB
+                self.call_api('/touch-vm', vmid=self.ident)
+
+    def fetch_ohlcv (self, next_clock):
+        delay = 1.0
+        ratio = 1.5
+        for i in range(5):
+            ohlcv = self.market.fetch_ohlcv(self.current_clock)
+            self.update_ohlcv(ohlcv)
+            # Return having new
+            if self.current_clock >= next_clock:
+                return True
+            time.sleep(delay)
+            delay *= ratio
+        # 
+        logger.warning(f'long delay in fetching OHLCV data')
+        time.sleep(60)
+        return False
             
     def wait_till_next (self):
         next_clock = self.next_clock
+        now = int(self.now())
+        print(f'{now}: {self.current_clock}: {self.next_clock}')
         while True:
             # Sleep
-            interval = self.next_clock - self.current_clock
-            now = self.now()
-            if now < self.next_clock:
-                to_sleep = interval - now % interval
-                logger.debug(f'sleep={to_sleep} now={now} interval={interval}')
-                time.sleep(to_sleep)
+            self.sleep_with_hb(next_clock)
 
             # Fetch & update candle
-            for i in range(3):
-                ohlcv = self.market.fetch_ohlcv(self.current_clock)
-                self.update_ohlcv(ohlcv)
-                # Return having new
-                if self.current_clock >= next_clock:
-                    break
-                time.sleep(5)
-            if self.current_clock >= next_clock:
+            if self.fetch_ohlcv(self.next_clock):
                 break
 
         # Get broker's status
@@ -127,11 +186,6 @@ class BotVM (object):
         logger.debug(f'start_trystep: {self.current_clock}')
 
         broker = dict(position_size=0)
-        status, obj = call_api2(self.params, '/step-vm', vmid=self.ident, broker=broker,
+        obj = self.call_api('/step-vm', vmid=self.ident, broker=broker,
                                 ohlcv2=self.latest_ohlcv2, position=self.position)
-        if status == 205:   # reset
-            raise VMIsPurged()
-
-        # status 200
-        self.update_jitter(obj['server_clock'])
         return obj['actions']
