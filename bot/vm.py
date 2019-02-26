@@ -20,7 +20,7 @@ class BotVM (object):
         self.market = market
         self.jitter = 0.0
         self.ohlcv = None
-        self.broker = Broker(market)
+        self.broker = Broker(market, params['strategy'])
         self.position = 0.0
 
     @property

@@ -8,11 +8,14 @@ import queue
 
 class Broker (object):
 
-    def __init__ (self, market):
+    def __init__ (self, market, params):
         self.market = market
         self.immediate_orders = {}
         self.pending_orders = {}
         self.positions = {}
+
+        self.default_qty_value = params.get('default_qty_value', 1.0)
+        self.pyramiding = params.get('pyramiding', False)
 
         self.status_queue = queue.Queue()
         self.command_queue = queue.Queue()
@@ -90,7 +93,7 @@ class Broker (object):
         long_ = action['long']
         qty = action.get('qty')
         if qty is None:
-            qty = 1   # FIXME
+            qty = self.default_qty_value
         if not long_:
             qty = -qty
 
