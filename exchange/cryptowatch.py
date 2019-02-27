@@ -19,9 +19,9 @@ from exchange.ohlcprovider import BaseOHLCVProvider
 class OHLCVProvider (BaseOHLCVProvider):
 
     def __init__ (self, exchange, symbol):
+        super().__init__()
         self.exchange = exchange
         self.pair = symbol_to_pair(exchange, symbol)
-        self.barcount = 256
 
     def resolutions (self):
         return (

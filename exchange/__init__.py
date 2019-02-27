@@ -134,6 +134,11 @@ class Market (object):
         # ohlcv provider
         self._initialize_ohlcv_provider()
         self.ohlcv_provider.set_resolution(self.resolution)
+        strategy = options.get('strategy', None)
+        if strategy:
+            max_bars_back = strategy.get('max_bars_back', None)
+            if max_bars_back:
+                self.ohlcv_provider.set_barcount(max_bars_back)
 
     @property
     def info (self):
