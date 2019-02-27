@@ -8,7 +8,7 @@ from util.comm import call_api
 def do_init (params, pine_fname, pine_str):
     res = call_api(params, '/scan-input', code=pine_str)
     if 'error' in res:
-        raise Exeption('Pine rejected: {}'.format(res['error']))
+        raise Exception('Pine rejected: {}'.format(res['error']))
 
     # Generate template w/default values
     save_parameters(res['params'], pine_fname)
