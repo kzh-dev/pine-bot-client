@@ -120,23 +120,23 @@ BTC/EUR: ['BTC/EUR', 'BTCEUR', 'BTC_EUR']: True: ['1m', '3m', '5m', '15m', '30m'
 ### 設定項目について
 
 #### トップレベル項目
- * '''exchange''' (string) - 取引所名
- * '''symbol''' (string) - シンボル名
- * '''resolution''' (string,integer) - 足の長さ。`support` コマンドで表示される様な文字列 or 分単位の整数
+ * **exchange** (string) - 取引所名
+ * **symbol** (string) - シンボル名
+ * **resolution** (string,integer) - 足の長さ。`support` コマンドで表示される様な文字列 or 分単位の整数
  
 #### inputs
 このサブ項目の下に `input()` 関数で変更可能なパラメータを指定します。`type` で指定する型に従った形式で指定してください。
 
 #### ccxt
 ccxt ライブラリに指定するオプションを指定できます。詳細は ccxt のマニュアルを参照してください。重要なものは以下の二つです。
- * '''apiKey''' (string) - API キー
- * '''secret''' (string) - 秘密鍵
+ * **apiKey** (string) - API キー
+ * **secret** (string) - 秘密鍵
  
 #### 取引所
 bitmex などの取引所名のキーを指定して、上記 ccxt のオプションを取引所毎に設定することができます。`global-parameters.json` 内に全取引所の設定を一括で指定できるので便利です。
 
 #### discord
 Disocrd 通知についての設定項目になります。
- * '''name''' (string) - 通知名
- * '''url''' (string) - Discord 上で発行した通知用 URL
- * '''avatar_url''' (string) - Avatar アイコン画像の URL
+ * **name** (string) - 通知名
+ * **url** (string) - Discord 上で発行した通知用 URL
+ * **avatar_url** (string) - Avatar アイコン画像の URL
