@@ -127,6 +127,10 @@ BTC/EUR: ['BTC/EUR', 'BTCEUR', 'BTC_EUR']: True: ['1m', '3m', '5m', '15m', '30m'
 #### inputs
 このサブ項目の下に `input()` 関数で変更可能なパラメータを指定します。`type` で指定する型に従った形式で指定してください。
 
+#### strategy
+`strategy()` 関数で指定する内容を変更できます。恐らく最も重要なのは注文ロットを指定する `default_qty_value` でしょう。
+ * **default_qty_value** (float) - 取引ロット **現在 default_qty_type は無視されるので各マーケットの取引単位での数字になります**
+
 #### ccxt
 ccxt ライブラリに指定するオプションを指定できます。詳細は ccxt のマニュアルを参照してください。重要なものは以下の二つです。
  * **apiKey** (string) - API キー
