@@ -6,6 +6,8 @@ logger = getLogger(__name__)
 import threading
 import queue
 
+from util.logging import notify_order
+
 class Broker (object):
 
     def __init__ (self, market, params):
@@ -76,7 +78,7 @@ class Broker (object):
                 status = o['status']
                 if status == 'open':
                     continue
-                logger.debug(f'order {status}: {o}')
+                notify_order(logger, f'order {status}: {o}')
                 self.immediate_orders.pop(o['id'])
                 # TODO limit order
             # unnecessary to wait for fulfillment of all immediate orders
@@ -106,6 +108,8 @@ class Broker (object):
             cur_qty = self.position
             order_qty = qty - cur_qty
 
+        notify_order(logger, f'entry({aid}): qty={qty}, cur={self.position}, order_qty={order_qty}')
+
         if order_qty:
             o = self.market.create_order(order_qty)
             # Apply position
@@ -116,6 +120,7 @@ class Broker (object):
     def close_position (self, action):
         aid = action['id']
         pos = self.positions.get(aid, None)
+        notify_order(logger, f'close{aid}: pos={pos}')
         if pos:
             o = self.market.create_order(-pos['qty'], -1)
             self.immediate_orders[o['id']] = o
@@ -123,6 +128,7 @@ class Broker (object):
 
     def close_all_positions (self):
         pos = self.position
+        notify_order(logger, f'close_all: pos={pos}')
         if pos:
             o = self.market.create_order(-pos, -1)
             self.immediate_orders[o['id']] = o

@@ -103,4 +103,8 @@ def notify (logger, msg):
     logger.info(msg)
     if discord_thread:
         discord_queue.put(msg)
-    
+
+def notify_order (logger, msg):
+    logger.info(msg)
+    if discord_thread and discord_conf.get('order', None) is not False:
+        discord_queue.put(msg)
