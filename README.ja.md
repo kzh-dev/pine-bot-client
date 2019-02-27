@@ -41,25 +41,25 @@
 ## 使用方法
 
 #### 1. インストールで展開したディレクトリ内に入ります
-```sh
+``` sh
 $ cd pine-bot-client-xxxx
 ```
 
 #### 2. グローバル設定ファイルを作成します。
-```sh
+``` sh
 $ mv global-parameters.json.tmpl global-parameters.json
 ```
 設定ファイルの中身は後述しますが、通常こちらに API キー等を設定することになるでしょう。
 
 ### 3. Pine スクリプトからスクリプトごとの設定ファイルを作成します。
-```sh
+``` sh
 $ python pine-bot-client.py init <your Pine script>
 ```
 これを実行すると、指定した Pine スクリプトファイルと同じ場所に、同名で拡張子に `.json` がついたファイルが作成されます。
 このファイルでは通常、取引所やシンボル、足の長さ、と共に `input()` 関数で変更可能なパラメータを設定できます。
 
 ### 4. 実行します。
-```sh
+``` sh
 $ python pine-bot-client.py run <your Pine script>
 ```
 実行すると、端末及び `logs/` ディレクトリ以下に実行ログが出力されます。
@@ -68,23 +68,23 @@ $ python pine-bot-client.py run <your Pine script>
 上記では `init`, `run` コマンドがありましたが、他にもヘルプメッセージを表示する `help`、サポートする取引所情報を出力する `support` コマンドがあります。
 
 ヘルプ情報の表示
-```sh
+``` sh
 $ python pine-bot-client.py help
 ```
 
 サポートする取引所一覧を表示
-```sh
+``` sh
 $ python pine-bot-client.py support
 ```
 
 シンボルのサポート情報を表示
-```sh
+``` sh
 $ python pine-bot-client.py support <exchange>
 ```
 
 `exchange` にはサポートされている取引所名を指定いてください。このコマンドでは取引所ごとに以下のような表示が行われます。
 
-```sh
+``` sh
 $ python pine-bot-client.py support bitflyer
 BTC/JPY: ['BTC/JPY', 'BTCJPY', 'BTC_JPY']: True: ['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '12h', '1d', '3d', '1w']
 FX_BTC_JPY: ['FX_BTC_JPY', 'FXBTCJPY']: True: ['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '12h', '1d', '3d', '1w']
@@ -104,4 +104,39 @@ BTC/EUR: ['BTC/EUR', 'BTCEUR', 'BTC_EUR']: True: ['1m', '3m', '5m', '15m', '30m'
 最後のカラムは対応している時間足になります。ここが空になっているものは実行できません。
 
 
-### 設定ファイル
+## 設定ファイル
+このプログラムでは三種類の JSON フォーマットの設定ファイルを利用します。
+ * 実行時のカレントディレクトリの `glogal-parameters.json`
+ * 実行する Pine スクリプトと同じディレクトリの `<pine script name`>.json`
+ * `run` コマンドの最後に指定した設定ファイル
+それぞれのファイルに記述できる内容は全く同一で、実行前にこれらは一つにマージされます。
+
+優先度は
+```
+ global-parameters.json < <pine script>.json < run コマンド時の json>
+```
+となります。
+
+### 設定項目について
+
+#### トップレベル項目
+ * '''exchange''' (string) - 取引所名
+ * '''symbol''' (string) - シンボル名
+ * '''resolution''' (string,integer) - 足の長さ。`support` コマンドで表示される様な文字列 or 分単位の整数
+ 
+#### inputs
+このサブ項目の下に `input()` 関数で変更可能なパラメータを指定します。`type` で指定する型に従った形式で指定してください。
+
+#### ccxt
+ccxt ライブラリに指定するオプションを指定できます。詳細は ccxt のマニュアルを参照してください。重要なものは以下の二つです。
+ * '''apiKey''' (string) - API キー
+ * '''secret''' (string) - 秘密鍵
+ 
+#### 取引所
+bitmex などの取引所名のキーを指定して、上記 ccxt のオプションを取引所毎に設定することができます。`global-parameters.json` 内に全取引所の設定を一括で指定できるので便利です。
+
+#### discord
+Disocrd 通知についての設定項目になります。
+ * '''name''' (string) - 通知名
+ * '''url''' (string) - Discord 上で発行した通知用 URL
+ * '''avatar_url''' (string) - Avatar アイコン画像の URL
