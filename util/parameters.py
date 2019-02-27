@@ -12,7 +12,7 @@ from copy import deepcopy
 from util.dict_merge import dict_merge
 
 default = collections.OrderedDict(
-    API_SERVER_URL = 'http://pine-api.kzh-crypto.net',
+    api_server_url = 'http://pine-api.kzh-crypto.net',
 )
 
 def load_param_file (fname):

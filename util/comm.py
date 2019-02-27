@@ -9,7 +9,7 @@ class BadResponse (Exception):
 
 def _call_api (ap_params, path, **kws):
     headers = {"content-type": 'application/json'}
-    server = ap_params['API_SERVER_URL']
+    server = ap_params['api_server_url']
     r = requests.post(server + path, data=json.dumps(kws), headers=headers)
     if not r.ok:
         raise BadResponse('Bad status code: {}'.format(r))
