@@ -37,8 +37,8 @@ logger = getLogger()
 
 from util.parameters import load_parameters, load_param_file
 
-BOT_NAME = 'pine-bot'
-VERSION = '0.0'
+BOT_NAME = 'Pine-Bot'
+VERSION = '0.1'
 
 ## do_help
 def do_help ():
