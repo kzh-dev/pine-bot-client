@@ -4,7 +4,7 @@
 
 ## What's this?
 
-This is a **client** trading program(bot) which can use Pine script langauge used in [TradingView](http://tradingview.com/) to define a strategy.
+This is a **client** implementation of trading program(bot) which can use Pine script langauge used in [TradingView](http://tradingview.com/) to define a strategy.
 
  * (Currently) Only support crypto trading using ccxt and cryptowatch API.
  * Work with server module (which is not public)
