@@ -23,15 +23,15 @@
 
  * Version 3 のみ対応
  * 非対応な関数・変数
-  * `security()` 
-  * `strategy.order()`
-  * 多くのビルトイン関数・変数(要望のあるものから対応していきます)
+   * `security()` 
+   * `strategy.order()`
+   * 多くのビルトイン関数・変数(要望のあるものから対応していきます)
  * Pine 文法
-  * 多重代入
+   * 多重代入
  * 注文
-  * 指値注文
-  * stop/stop-limit 注文
-  * ピラミッディング
+   * 指値注文
+   * stop/stop-limit 注文
+   * ピラミッディング
  * `starategy.risk` パラメータ
 
 ## インストール
