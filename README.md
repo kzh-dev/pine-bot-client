@@ -23,15 +23,15 @@ Your feedback and request are appreciated.
 
  * Version 3 is supported
  * Not implemented builtin functions
-  * `security()` 
-  * `strategy.order()`
-  * Many others...(Your request is appreciated)
+   * `security()` 
+   * `strategy.order()`
+   * Many others...(Your request is appreciated)
  * Syntax
-  * Multiple assignment statement
+   * Multiple assignment statement
  * Order
-  * Limit order
-  * Stop/Stop-limit order
-  * Pyramiding
+   * Limit order
+   * Stop/Stop-limit order
+   * Pyramiding
  * `starategy.risk` builtin variables
 
 ## Installation
